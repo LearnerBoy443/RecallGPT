@@ -1,0 +1,17 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+django==6.0.6
+djangorestframework==3.17.1
+langchain==1.3.8
+langchain-community==0.4.2
+chromadb==1.5.9
+sentence-transformers==5.5.1
+langchain-google-genai==4.2.5
+python-dotenv==1.2.2
+requests==2.34.2
+urllib3
+pillow
+langchain-nvidia-ai-endpoints
+psycopg2-binary
+gunicorn==21.2.0
+whitenoise==6.6.0
