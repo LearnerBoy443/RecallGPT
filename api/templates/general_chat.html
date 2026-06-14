@@ -1,0 +1,442 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .chat-layout {
+        display: flex;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    /* History Sidebar */
+    .chat-history-sidebar {
+        width: 260px;
+        min-width: 260px;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        background: rgba(0,0,0,0.15);
+    }
+
+    .history-header {
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .btn-new-chat {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.8rem 1rem;
+        background: linear-gradient(135deg, var(--accent-2), #d946ef);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+    }
+    .btn-new-chat:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+    }
+
+    .history-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.75rem 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .history-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 0.9rem;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+        gap: 0.5rem;
+    }
+    .history-item:hover {
+        background: var(--btn-sec-bg);
+        border-color: var(--border);
+    }
+    .history-item.active {
+        background: rgba(236, 72, 153, 0.1);
+        border-color: rgba(236, 72, 153, 0.3);
+    }
+    .history-item-text {
+        flex: 1;
+        overflow: hidden;
+    }
+    .history-title {
+        font-size: 0.85rem;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--text-main);
+    }
+    .history-date {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+    .history-delete {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 6px;
+        opacity: 0;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    .history-item:hover .history-delete { opacity: 1; }
+    .history-delete:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+
+    /* Chat Main Area */
+    .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .message {
+        max-width: 75%;
+        padding: 1.25rem;
+        border-radius: 16px;
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+    .message.user {
+        align-self: flex-end;
+        background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    .message.bot {
+        align-self: flex-start;
+        background-color: var(--btn-sec-bg);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+        white-space: pre-wrap;
+    }
+
+    .chat-input-wrapper {
+        padding: 1.25rem 1.5rem;
+        background: rgba(24, 24, 27, 0.8);
+        border-top: 1px solid var(--glass-border);
+    }
+    .chat-input-area {
+        background-color: var(--input-bg);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid var(--border);
+        padding: 0.4rem;
+        transition: border-color 0.3s;
+    }
+    .chat-input-area:focus-within { border-color: var(--accent-2); }
+    .chat-input-area input {
+        flex: 1; border: none; background: transparent;
+        color: var(--text-main); outline: none;
+        padding: 0.75rem 1rem; font-size: 1rem;
+    }
+    .chat-input-area button {
+        background-color: var(--accent-2);
+        border: none; color: white;
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .chat-input-area button:hover { background-color: #d946ef; transform: scale(1.05); }
+    .chat-input-area button:disabled { background-color: var(--border); cursor: not-allowed; transform: none; }
+
+    .typing-indicator { display: inline-flex; gap: 4px; }
+    .typing-indicator span {
+        width: 6px; height: 6px; background-color: var(--text-muted);
+        border-radius: 50%; animation: typing 1.4s infinite ease-in-out both;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+    .empty-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        text-align: center;
+        padding: 2rem;
+    }
+    .empty-state-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state-title { font-family: 'Outfit'; font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-layout">
+    <!-- History Sidebar -->
+    <div class="chat-history-sidebar">
+        <div class="history-header">
+            <button class="btn-new-chat" onclick="startNewChat()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                New Chat
+            </button>
+        </div>
+        <div class="history-list" id="historyList">
+            <div style="text-align:center; color: var(--text-muted); padding: 1rem; font-size: 0.8rem;">Loading history...</div>
+        </div>
+    </div>
+
+    <!-- Main Chat -->
+    <div class="chat-main">
+        <div class="page-header" style="padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center; border-radius: 0;">
+            <div>
+                <h2 class="page-title" id="chatTitle" style="font-size:1.4rem;">RecallGPT Chat</h2>
+                <div class="page-subtitle">General-purpose conversation powered by NVIDIA Llama 3.1.</div>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <div class="empty-state-title">Start a Conversation</div>
+                <div>Select a past chat from the sidebar or type a message below to begin.</div>
+            </div>
+        </div>
+
+        <div class="chat-input-wrapper">
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Message RecallGPT..." onkeypress="if(event.key === 'Enter') sendMessage()">
+                <button id="sendBtn" onclick="sendMessage()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const historyList = document.getElementById('historyList');
+    const chatTitle = document.getElementById('chatTitle');
+    let currentSessionId = null;
+
+    async function loadHistory() {
+        const resp = await fetch('/api/sessions/?type=general');
+        const data = await resp.json();
+        renderHistory(data.sessions);
+    }
+
+    function renderHistory(sessions) {
+        if (!sessions || sessions.length === 0) {
+            historyList.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:1rem;font-size:0.8rem;">No conversations yet</div>`;
+            return;
+        }
+        historyList.innerHTML = sessions.map(s => `
+            <div class="history-item ${currentSessionId === s.id ? 'active' : ''}" id="session-${s.id}">
+                <div class="history-item-text" onclick="loadSession(${s.id}, '${s.title.replace(/'/g,"\\'")}')">
+                    <div class="history-title">${s.title}</div>
+                    <div class="history-date">${s.created_at}</div>
+                </div>
+                <button class="history-delete" onclick="deleteSession(${s.id})" title="Delete">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    async function loadSession(sessionId, title) {
+        currentSessionId = sessionId;
+        chatTitle.textContent = title;
+        document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+        const el = document.getElementById(`session-${sessionId}`);
+        if (el) el.classList.add('active');
+
+        const resp = await fetch(`/api/sessions/${sessionId}/messages/`);
+        const data = await resp.json();
+        chatMessages.innerHTML = '';
+        data.messages.forEach(m => addMessage(m.content, m.role === 'user' ? 'user' : 'bot'));
+    }
+
+    function startNewChat() {
+        currentSessionId = null;
+        chatTitle.textContent = 'RecallGPT Chat';
+        chatMessages.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <div class="empty-state-title">Start a Conversation</div>
+                <div>Type a message below to begin a new chat.</div>
+            </div>`;
+        document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+    }
+
+    async function deleteSession(sessionId) {
+        await fetch(`/api/sessions/?id=${sessionId}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        if (currentSessionId === sessionId) startNewChat();
+        loadHistory();
+    }
+
+    function parseMarkdown(text) {
+        if (text.includes('typing-indicator')) return text;
+        // Escape HTML
+        let html = text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        
+        // Match ![caption](url)
+        const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+        html = html.replace(imgRegex, (match, alt, src) => {
+            return `<img src="${src}" alt="${alt}" style="max-width:100%; border-radius:12px; margin-top:0.75rem; display:block; box-shadow:0 4px 15px rgba(0,0,0,0.3); border:1px solid var(--border);" />`;
+        });
+
+        // Match [anchor](url) (regular links)
+        const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+        html = html.replace(linkRegex, (match, anchor, url) => {
+            return `<a href="${url}" target="_blank" style="color:var(--accent-2); text-decoration:underline;">${anchor}</a>`;
+        });
+
+        // Match **bold**
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        return html;
+    }
+
+    function addMessage(text, sender) {
+        const emptyState = chatMessages.querySelector('.empty-state');
+        if (emptyState) emptyState.remove();
+
+        const div = document.createElement('div');
+        div.className = `message ${sender}`;
+        if (sender === 'bot') {
+            div.innerHTML = `<strong style="display:block;margin-bottom:0.5rem;color:var(--accent-2);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;">RecallGPT</strong>${parseMarkdown(text).replace(/\n/g, '<br>')}`;
+        } else {
+            div.textContent = text;
+        }
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return div;
+    }
+
+    async function sendMessage() {
+        const query = chatInput.value.trim();
+        if (!query) return;
+
+        addMessage(query, 'user');
+        chatInput.value = '';
+        chatInput.disabled = true;
+        sendBtn.disabled = true;
+
+        const loadingDiv = addMessage('<div class="typing-indicator"><span></span><span></span><span></span></div>', 'bot');
+
+        try {
+            const response = await fetch('/api/general_chat/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ prompt: query, session_id: currentSessionId })
+            });
+
+            if (!response.ok) {
+                chatMessages.removeChild(loadingDiv);
+                addMessage(`Error: HTTP ${response.status}`, 'bot');
+                return;
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let aiText = "";
+            let botMsgDiv = null;
+
+            if (chatMessages.contains(loadingDiv)) chatMessages.removeChild(loadingDiv);
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunkString = decoder.decode(value, { stream: true });
+                const lines = chunkString.split("\n");
+
+                for (const line of lines) {
+                    if (line.startsWith("data: ")) {
+                        const dataStr = line.replace("data: ", "").trim();
+                        if (!dataStr) continue;
+
+                        try {
+                            const data = JSON.parse(dataStr);
+                            
+                            if (data.error) {
+                                if (!botMsgDiv) addMessage(`Error: ${data.error}`, 'bot');
+                                else botMsgDiv.innerHTML += `<br>Error: ${data.error}`;
+                                break;
+                            }
+                            
+                            if (data.done) {
+                                break;
+                            }
+
+                            if (data.session_id && !currentSessionId) {
+                                currentSessionId = data.session_id;
+                                chatTitle.textContent = data.session_title;
+                                loadHistory();
+                            }
+
+                            if (data.chunk) {
+                                aiText += data.chunk;
+                                if (!botMsgDiv) {
+                                    botMsgDiv = addMessage(aiText, 'bot');
+                                } else {
+                                    botMsgDiv.innerHTML = `<strong style="display:block;margin-bottom:0.5rem;color:var(--accent-2);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;">RecallGPT</strong>${parseMarkdown(aiText).replace(/\n/g, "<br>")}`;
+                                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                                }
+                            }
+                        } catch(e) {
+                            console.error("Parse error:", e, dataStr);
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            if (chatMessages.contains(loadingDiv)) chatMessages.removeChild(loadingDiv);
+            addMessage("Failed to connect to Cloud AI or an internal server error occurred.", 'bot');
+            console.error(err);
+        } finally {
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+            chatInput.focus();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+{% endblock %}

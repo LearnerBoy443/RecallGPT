@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - RecallGPT Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #09090b;
+            color: #f8fafc;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .split-left {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+        .split-right {
+            flex: 1;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .split-right::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1000&auto=format&fit=crop') center/cover;
+            opacity: 0.2;
+            mix-blend-mode: overlay;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(24, 24, 27, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 25px 60px -12px rgba(0,0,0,0.6);
+            will-change: transform, opacity;
+            transform: translate3d(0, 0, 0);
+        }
+        .brand {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: var(--brand-text-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            color: #a1a1aa;
+            margin-bottom: 2.5rem;
+            font-size: 0.95rem;
+        }
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #a1a1aa;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input:focus {
+            outline: none;
+            border-color: #ec4899;
+            background: rgba(0,0,0,0.5);
+            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.25), inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #ec4899, #d946ef);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
+        }
+        .footer-link {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #a1a1aa;
+        }
+        .footer-link a {
+            color: #ec4899;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .footer-link a:hover {
+            text-decoration: underline;
+        }
+        .showcase-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: white;
+            text-align: center;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            z-index: 1;
+        }
+        .showcase-text {
+            color: rgba(255,255,255,0.8);
+            font-size: 1.1rem;
+            text-align: center;
+            max-width: 400px;
+            z-index: 1;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="split-left">
+        <div class="login-card">
+            <div class="brand">Create Account</div>
+            <div class="subtitle">Join RecallGPT Premium today</div>
+            
+            <form method="post" action="{% url 'register' %}">
+                {% csrf_token %}
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" name="username" required autocomplete="username">
+                </div>
+                <div class="input-group">
+                    <label>Email (Gmail)</label>
+                    <input type="email" name="email" required autocomplete="email">
+                </div>
+                <div class="input-group">
+                    <label>Phone Number</label>
+                    <input type="tel" name="phone_number" required autocomplete="tel">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" name="password" required autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn-submit">Sign Up</button>
+            </form>
+            
+            <div class="footer-link">
+                Already have an account? <a href="{% url 'login' %}">Sign In</a>
+            </div>
+        </div>
+    </div>
+    <div class="split-right">
+        <div class="showcase-title">Unlock<br>New Possibilities.</div>
+        <div class="showcase-text">
+            Join the next generation of AI workspaces. Start conversing with local models and generating stunning imagery today.
+        </div>
+    </div>
+</body>
+</html>

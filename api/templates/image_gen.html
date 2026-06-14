@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .prompt-area {
+        background: var(--glass-panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 2rem;
+        text-align: center;
+    }
+    .prompt-input-wrapper {
+        max-width: 600px;
+        margin: 0 auto 1.5rem auto;
+        position: relative;
+    }
+    .prompt-input-wrapper input {
+        padding: 1.25rem 4rem 1.25rem 1.5rem;
+        font-size: 1.1rem;
+        border-radius: 16px;
+        background: var(--input-focus);
+    }
+    .prompt-input-wrapper button {
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        bottom: 8px;
+        width: 44px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--primary), var(--accent-1));
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .prompt-input-wrapper button:hover {
+        transform: scale(1.05);
+    }
+    
+    .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        padding: 0 2rem 2rem 2rem;
+    }
+    .img-card {
+        background: rgba(24,24,27,0.8);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .img-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+    }
+    .img-wrapper {
+        width: 100%;
+        padding-top: 100%;
+        position: relative;
+        background: #000;
+    }
+    .img-wrapper img {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        object-fit: cover;
+    }
+    .img-prompt {
+        padding: 1rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+    
+    .loading-glow {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(90deg, rgba(139,92,246,0.1), rgba(59,130,246,0.2), rgba(139,92,246,0.1));
+        background-size: 200% 200%;
+        animation: gradientGlow 2s ease infinite;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    @keyframes gradientGlow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* Hover overlay for download */
+    .img-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 2;
+    }
+    .img-card:hover .img-overlay {
+        opacity: 1;
+    }
+    .download-btn {
+        background: rgba(255, 255, 255, 0.95);
+        color: #111827;
+        border-radius: 50%;
+        width: 46px;
+        height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: transform 0.2s, background-color 0.2s, color 0.2s;
+        text-decoration: none;
+    }
+    .download-btn:hover {
+        transform: scale(1.1);
+        background: #ffffff;
+        color: var(--primary);
+    }
+    
+    /* Card footer with actions */
+    .card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+    .card-footer .img-prompt {
+        padding: 0;
+        flex: 1;
+    }
+    .footer-download-btn {
+        color: var(--text-muted);
+        transition: color 0.2s, transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.25rem;
+        margin-top: 0.25rem;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .footer-download-btn:hover {
+        color: var(--primary);
+        transform: scale(1.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">AI Image Studio</h2>
+    <p class="page-subtitle">Turn your imagination into stunning visuals instantly.</p>
+</div>
+
+<div class="prompt-area">
+    <h3 style="font-family: 'Outfit'; margin-bottom: 1rem; font-size: 1.5rem;">What do you want to see?</h3>
+    
+    <!-- Model Selector -->
+    <div style="margin-bottom: 1.5rem; display: flex; justify-content: center; gap: 0.75rem; align-items: center;">
+        <label for="modelSelect" style="font-family: 'Outfit'; color: var(--text-muted); font-size: 0.95rem;">Model:</label>
+        <select id="modelSelect" style="background: var(--input-focus); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; font-family: 'Outfit'; font-size: 0.9rem; cursor: pointer; outline: none; transition: border-color 0.2s;">
+            <option value="flux_schnell" selected>Flux Schnell (Instant & High-Quality)</option>
+            <option value="sdxl_base">Stable Diffusion XL Base (High-Quality)</option>
+            <option value="sd_15">Stable Diffusion 1.5 (Classic)</option>
+        </select>
+    </div>
+
+    <div class="prompt-input-wrapper">
+        <input type="text" id="imagePrompt" placeholder="A futuristic city with flying cars at sunset..." onkeypress="if(event.key === 'Enter') generateImage()">
+        <button id="genBtn" onclick="generateImage()">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        </button>
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-muted);">Configure your generation style and speed dynamically.</div>
+</div>
+
+<div class="gallery" id="imageGallery">
+    <!-- Generated images will appear here -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function generateImage() {
+        const inputEl = document.getElementById('imagePrompt');
+        const prompt = inputEl.value.trim();
+        if (!prompt) return;
+
+        const modelEl = document.getElementById('modelSelect');
+        const model = modelEl.value;
+        const modelName = modelEl.options[modelEl.selectedIndex].text;
+
+        const btn = document.getElementById('genBtn');
+        const gallery = document.getElementById('imageGallery');
+        
+        inputEl.disabled = true;
+        btn.disabled = true;
+        
+        // Create a card placeholder with glowing loader
+        const card = document.createElement('div');
+        card.className = 'img-card';
+        card.innerHTML = `
+            <div class="img-wrapper">
+                <div class="loading-glow">
+                    <span style="font-family:'Outfit'; font-weight:700; color:var(--primary);">Generating...</span>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="img-prompt">${prompt}</div>
+            </div>
+        `;
+        gallery.prepend(card);
+
+        try {
+            const response = await fetch('/api/generate_image/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ prompt: prompt, model: model })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.image_url) {
+                const safeFilename = prompt.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50) || 'generated_image';
+                
+                // Set the image inside the wrapper and add hover overlay
+                card.querySelector('.img-wrapper').innerHTML = `
+                    <img src="${data.image_url}" alt="${prompt}">
+                    <div class="img-overlay">
+                        <a href="${data.image_url}" download="${safeFilename}.png" class="download-btn" title="Download Image">
+                            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        </a>
+                    </div>
+                `;
+                
+                // Add the footer download button
+                const footer = card.querySelector('.card-footer');
+                const downloadLink = document.createElement('a');
+                downloadLink.href = data.image_url;
+                downloadLink.download = `${safeFilename}.png`;
+                downloadLink.className = 'footer-download-btn';
+                downloadLink.title = 'Download Image';
+                downloadLink.innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>`;
+                footer.appendChild(downloadLink);
+
+                // Add the model annotation
+                const promptEl = card.querySelector('.img-prompt');
+                if (data.fallback) {
+                    promptEl.innerHTML += ` <span style="font-size:0.7rem; color:var(--text-muted); display:block; margin-top:0.25rem;">(via Fallback: ${data.model_used})</span>`;
+                } else {
+                    promptEl.innerHTML += ` <span style="font-size:0.7rem; color:#c084fc; display:block; margin-top:0.25rem; font-weight:600;">(via ${modelName})</span>`;
+                }
+            } else {
+                card.querySelector('.img-wrapper').innerHTML = `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ef4444;text-align:center;">Failed to generate</div>`;
+            }
+        } catch (err) {
+            console.error(err);
+            card.querySelector('.img-wrapper').innerHTML = `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ef4444;text-align:center;">Network Error</div>`;
+        } finally {
+            inputEl.disabled = false;
+            btn.disabled = false;
+            inputEl.value = '';
+            inputEl.focus();
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecallGPT Premium</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #09090b;
+            --bg-surface: #18181b;
+            --bg-surface-hover: #27272a;
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --accent-1: #3b82f6;
+            --accent-2: #ec4899;
+            --text-main: #f8fafc;
+            --text-muted: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.05);
+            --glass-bg: rgba(24, 24, 27, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.06);
+            --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+            
+            --nav-item-hover: #fff;
+            --brand-text-grad: linear-gradient(to right, #fff, #a1a1aa);
+            --user-sec-bg: rgba(0,0,0,0.2);
+            --glass-panel-bg: rgba(255, 255, 255, 0.03);
+            --btn-text: white;
+            --btn-sec-bg: rgba(255, 255, 255, 0.05);
+            --btn-sec-hover: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(0,0,0,0.3);
+            --input-focus: rgba(0,0,0,0.5);
+            --page-hdr-bg: rgba(255,255,255,0.01);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+            --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+            --logout-color: #f87171;
+            --logout-hover-color: #fca5a5;
+            --logout-hover-bg: rgba(239, 68, 68, 0.08);
+            --logout-hover-border: rgba(239, 68, 68, 0.2);
+        }
+
+        [data-theme="light"] {
+            --bg-base: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-surface-hover: #f1f5f9;
+            --primary: #7c3aed;
+            --primary-hover: #6d28d9;
+            --accent-1: #2563eb;
+            --accent-2: #db2777;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border: rgba(0, 0, 0, 0.08);
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(0, 0, 0, 0.06);
+            --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+            
+            --nav-item-hover: #0f172a;
+            --brand-text-grad: linear-gradient(to right, #0f172a, #475569);
+            --user-sec-bg: rgba(0,0,0,0.03);
+            --glass-panel-bg: rgba(0, 0, 0, 0.02);
+            --btn-text: white;
+            --btn-sec-bg: rgba(0, 0, 0, 0.05);
+            --btn-sec-hover: rgba(0, 0, 0, 0.1);
+            --input-bg: rgba(255,255,255,0.8);
+            --input-focus: rgba(255,255,255,1);
+            --page-hdr-bg: rgba(0,0,0,0.01);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+            --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+            --logout-color: #ef4444;
+            --logout-hover-color: #dc2626;
+            --logout-hover-bg: rgba(239, 68, 68, 0.1);
+            --logout-hover-border: rgba(239, 68, 68, 0.3);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Background FX */
+        .bg-fx {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.45;
+            animation: floatOrb 20s infinite ease-in-out alternate;
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
+        }
+        .orb-1 { width: 600px; height: 600px; background: rgba(139, 92, 246, 0.12); top: -200px; left: -100px; }
+        .orb-2 { width: 500px; height: 500px; background: rgba(59, 130, 246, 0.12); bottom: -100px; right: -50px; animation-delay: -5s; }
+        .orb-3 { width: 400px; height: 400px; background: rgba(236, 72, 153, 0.08); top: 40%; left: 50%; animation-delay: -10s; }
+
+        @keyframes floatOrb {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            50% { transform: translate3d(40px, 20px, 0) scale(1.08); }
+            100% { transform: translate3d(-20px, -40px, 0) scale(0.92); }
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); filter: blur(4px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        
+        .stagger-1 { animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: 0.1s; }
+        .stagger-2 { animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: 0.2s; }
+        .stagger-3 { animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: 0.3s; }
+        .stagger-4 { animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: 0.4s; }
+
+        /* Premium Floating Sidebar */
+        .sidebar-wrapper {
+            padding: 1.5rem;
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .sidebar {
+            flex: 1;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 20px 50px -10px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.05);
+            overflow-y: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+            will-change: transform, opacity;
+            transform: translate3d(0, 0, 0);
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            display: none;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--accent-1));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .brand-text {
+            font-size: 1.35rem;
+            font-weight: 800;
+            background: var(--brand-text-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.65rem 0.85rem;
+            margin-bottom: 0.3rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            font-size: 0.9rem;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .nav-item:hover {
+            color: var(--nav-item-hover);
+            transform: translateX(4px);
+        }
+
+        .nav-item:hover::before {
+            opacity: 1;
+        }
+
+        .nav-item.active {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--nav-item-hover);
+            border: 1px solid transparent;
+            box-shadow: none;
+        }
+        
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            left: 0; top: 15%; bottom: 15%;
+            width: 4px;
+            background: var(--primary);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .nav-item svg {
+            margin-right: 1rem;
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
+            transition: stroke 0.3s;
+        }
+
+        .nav-item.active svg {
+            stroke: var(--primary);
+        }
+
+        .user-section {
+            margin-top: auto;
+            background: var(--user-sec-bg);
+            padding: 1rem;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid var(--border);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-family: 'Outfit';
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s;
+            padding: 0.5rem;
+        }
+
+        .logout-btn:hover {
+            color: #ef4444;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            padding: 1.5rem 1.5rem 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            flex: 1;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), var(--glass-shadow);
+            overflow-y: auto;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            animation: fadeInUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            will-change: transform, opacity;
+            transform: translate3d(0, 0, 0);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
+        }
+
+        /* Universal Components */
+        .glass-panel {
+            background: var(--glass-panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: var(--btn-text);
+            border: none;
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--btn-sec-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-secondary:hover {
+            background: var(--btn-sec-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(1px);
+        }
+
+        input[type="text"], input[type="password"], input[type="email"], select {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            font-size: 0.95rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25), inset 0 1px 2px rgba(0,0,0,0.1);
+            background-color: var(--input-focus);
+        }
+        
+        .page-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--page-hdr-bg);
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        
+        .logout-nav-item {
+            border: 1px solid transparent;
+        }
+        .logout-nav-item:hover {
+            color: var(--logout-hover-color) !important;
+            background: var(--logout-hover-bg) !important;
+            border-color: var(--logout-hover-border) !important;
+        }
+
+        /* ══ Startup Splash ══ */
+        @keyframes splashSpin { to { transform: rotate(360deg); } }
+        @keyframes splashFadeOut {
+            0%   { opacity: 1; transform: scale(1); }
+            80%  { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.04); }
+        }
+
+        #app-splash {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            background: radial-gradient(ellipse at 60% 40%, rgba(139,92,246,0.18), transparent 60%),
+                        radial-gradient(ellipse at 30% 70%, rgba(59,130,246,0.14), transparent 60%),
+                        var(--splash-bg, #09090b);
+            pointer-events: none;
+            animation: splashFadeOut 1.4s 0.5s cubic-bezier(0.4,0,0.2,1) forwards;
+        }
+        
+        html.hide-splash #app-splash {
+            display: none !important;
+            animation: none !important;
+        }
+
+        .splash-logo-ring {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent-1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 0 40px rgba(139,92,246,0.5), 0 0 80px rgba(139,92,246,0.2);
+            position: relative;
+        }
+        .splash-logo-ring::before {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: rgba(139,92,246,0.8);
+            border-right-color: rgba(59,130,246,0.5);
+            animation: splashSpin 1s linear infinite;
+        }
+
+        .splash-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            background: var(--brand-text-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .splash-tagline {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        /* ══ Logout Overlay ══ */
+        #logout-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            background: radial-gradient(ellipse at center, #18181b, #09090b);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+        #logout-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .logout-overlay-icon {
+            width: 56px; height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent-1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 0 30px rgba(139,92,246,0.4);
+            position: relative;
+        }
+        .logout-overlay-icon::before {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: rgba(139,92,246,0.9);
+            border-right-color: rgba(59,130,246,0.6);
+            animation: splashSpin 0.9s linear infinite;
+        }
+        .logout-overlay-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .logout-overlay-msg {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+    </style>
+    {% block extra_head %}{% endblock %}
+    <script>
+        if (sessionStorage.getItem('splashShown')) {
+            document.documentElement.classList.add('hide-splash');
+        } else {
+            sessionStorage.setItem('splashShown', 'true');
+        }
+    </script>
+</head>
+<body>
+
+    <!-- ══ Startup Splash ══ -->
+    <div id="app-splash">
+        <div class="splash-logo-ring">🧠</div>
+        <div class="splash-title">RecallGPT</div>
+        <div class="splash-tagline">Loading your workspace…</div>
+    </div>
+
+    <!-- ══ Logout Overlay ══ -->
+    <div id="logout-overlay">
+        <div class="logout-overlay-icon">🧠</div>
+        <div class="logout-overlay-title">Signing Out</div>
+        <div class="logout-overlay-msg">See you soon, {{ user.username }} 👋</div>
+    </div>
+    
+    <!-- Animated Orbs -->
+    <div class="bg-fx">
+        <div class="bg-orb orb-1"></div>
+        <div class="bg-orb orb-2"></div>
+        <div class="bg-orb orb-3"></div>
+    </div>
+    
+    {% if user.is_authenticated %}
+    <div class="sidebar-wrapper">
+        <nav class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">🧠</div>
+                <div class="brand-text">RecallGPT</div>
+            </div>
+
+            <div class="nav-label">Main Menu</div>
+            <a href="{% url 'home' %}" class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Dashboard
+            </a>
+            <a href="{% url 'chat' %}" class="nav-item {% if request.resolver_match.url_name == 'chat' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                Chat with Notes
+            </a>
+            <a href="{% url 'general_chat' %}" class="nav-item {% if request.resolver_match.url_name == 'general_chat' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                RecallGPT Chat
+            </a>
+            <a href="{% url 'tasks' %}" class="nav-item {% if request.resolver_match.url_name == 'tasks' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                Task Overview
+            </a>
+            <a href="{% url 'expenses' %}" class="nav-item {% if request.resolver_match.url_name == 'expenses' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Expense Tracker
+            </a>
+            <a href="{% url 'image_gen' %}" class="nav-item {% if request.resolver_match.url_name == 'image_gen' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                AI Image Studio
+            </a>
+            <a href="{% url 'gallery' %}" class="nav-item {% if request.resolver_match.url_name == 'gallery' %}active{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Memories Gallery
+            </a>
+
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                <input type="file" id="noteUpload" accept=".md,.txt,.jpg,.jpeg,.png" multiple style="display: none;">
+                <button class="btn-primary" id="upload-nav-btn" style="flex: 1.1; padding: 0.7rem 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; box-shadow: 0 0 12px rgba(139, 92, 246, 0.3); border-radius: 12px; cursor: pointer; transition: all 0.2s; border: none; color: white;" onclick="document.getElementById('noteUpload').click()" title="Upload Notes & Photos">
+                    <svg style="margin-right: 0.3rem; width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    Upload
+                </button>
+                <button class="btn-secondary" id="retrain-nav-btn" style="flex: 0.9; padding: 0.7rem 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 500; background: var(--btn-sec-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 12px; cursor: pointer; transition: all 0.2s;" onclick="retrainDB()" onmouseover="this.style.background='var(--btn-sec-hover)'" onmouseout="this.style.background='var(--btn-sec-bg)'" title="Sync Vector Database">
+                    <svg style="margin-right: 0.3rem; width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5"></path></svg>
+                    Sync DB
+                </button>
+            </div>
+
+            <div class="nav-label" style="margin-top: 1rem;">Account</div>
+            
+            <a href="#" id="theme-toggle" class="nav-item">
+                <svg id="theme-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <span id="theme-text">Light Mode</span>
+            </a>
+            
+            <a href="#" id="logout-trigger" class="nav-item logout-nav-item" style="color: var(--logout-color);">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="stroke: currentColor;"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Logout
+            </a>
+            <form id="logout-form" method="post" action="{% url 'logout' %}" style="display:none;">
+                {% csrf_token %}
+            </form>
+
+            <div class="user-section" style="cursor: pointer; padding: 0;" onmouseover="this.style.background='var(--btn-sec-hover)'" onmouseout="this.style.background='var(--user-sec-bg)'">
+                <a href="{% url 'about' %}" style="text-decoration: none; color: inherit; display: block; width: 100%; padding: 1rem;">
+                    <div class="user-info">
+                        {% if user.profile.profile_picture %}
+                            <img src="{{ user.profile.profile_picture.url }}" class="avatar" style="object-fit: cover;">
+                        {% else %}
+                            <div class="avatar">{{ user.username|make_list|first|upper }}</div>
+                        {% endif %}
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600; font-size: 0.9rem;">{{ user.username }}</span>
+                            <span style="font-size: 0.7rem; color: var(--text-muted);">View Profile</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </nav>
+    </div>
+    {% endif %}
+
+    <main class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    {% if user.is_authenticated %}
+    <script>
+        document.getElementById('noteUpload').addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if (!files.length) return;
+
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            try {
+                const btn = document.getElementById('upload-nav-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = `<svg style="margin-right: 1rem; width: 20px; height: 20px; stroke: var(--primary); animation: spin 1s linear infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5"></path></svg> Uploading...`;
+                
+                const response = await fetch('/api/upload/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    btn.innerHTML = `<svg style="margin-right: 1rem; width: 20px; height: 20px;" fill="none" stroke="#34d399" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg> Uploaded!`;
+                    setTimeout(() => btn.innerHTML = originalText, 2000);
+                    window.dispatchEvent(new Event('notes-updated'));
+                } else {
+                    alert('Upload failed.');
+                    btn.innerHTML = originalText;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error uploading files.');
+            }
+        });
+
+        async function retrainDB() {
+            const btn = document.getElementById('retrain-nav-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<svg style="margin-right: 1rem; width: 20px; height: 20px; stroke: var(--primary); animation: spin 1s linear infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5"></path></svg> Syncing...`;
+            try {
+                const response = await fetch('/api/retrain/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                });
+                if (response.ok) {
+                    btn.innerHTML = `<svg style="margin-right: 1rem; width: 20px; height: 20px;" fill="none" stroke="#34d399" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg> Synced!`;
+                    setTimeout(() => btn.innerHTML = originalText, 2000);
+                    window.dispatchEvent(new Event('notes-updated'));
+                } else {
+                    alert('Failed to retrain.');
+                    btn.innerHTML = originalText;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error retraining DB.');
+                btn.innerHTML = originalText;
+            }
+        }
+    </script>
+    {% endif %}
+    {% block scripts %}{% endblock %}
+
+    <script>
+    /* \u2550\u2550 Logout animation \u2550\u2550 */
+    (function() {
+        const trigger = document.getElementById('logout-trigger');
+        if (!trigger) return;
+        trigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            sessionStorage.removeItem('splashShown');
+            const overlay = document.getElementById('logout-overlay');
+            if (overlay) overlay.classList.add('show');
+            setTimeout(function() {
+                document.getElementById('logout-form').submit();
+            }, 700);
+        });
+        
+        // Theme Toggler
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+        
+        function setTheme(isDark) {
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                themeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+                themeText.textContent = 'Light Mode';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                themeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+                themeText.textContent = 'Dark Mode';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            setTheme(false);
+        } else {
+            setTheme(true);
+        }
+        
+        if (themeToggle) {
+            themeToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isDark = !document.documentElement.hasAttribute('data-theme');
+                setTheme(!isDark);
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

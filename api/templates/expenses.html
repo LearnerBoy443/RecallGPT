@@ -1,0 +1,442 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .filters {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .total-card {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));
+        border: 1px solid rgba(139, 92, 246, 0.4);
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .total-card::after {
+        content: '';
+        position: absolute;
+        top: -50%; left: -50%; width: 200%; height: 200%;
+        background: radial-gradient(circle, var(--btn-sec-hover) 0%, transparent 60%);
+        pointer-events: none;
+    }
+
+    .total-label {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.5rem;
+        color: var(--text-muted);
+    }
+    .total-amount {
+        font-family: 'Outfit', sans-serif;
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin: 0;
+        background: var(--brand-text-grad);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    th {
+        font-family: 'Outfit', sans-serif;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.1em;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--user-sec-bg);
+    }
+    th:first-child { border-top-left-radius: 12px; }
+    th:last-child { border-top-right-radius: 12px; }
+    td {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.2s;
+    }
+    tr:hover td {
+        background: var(--glass-panel-bg);
+    }
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Modal Overlay Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+    .modal-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .modal-content {
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+    }
+    .modal-overlay.active .modal-content {
+        transform: scale(1);
+    }
+
+    input[type="number"] {
+        outline: none;
+    }
+    input[type="number"]:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        background-color: var(--input-focus);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h2 class="page-title">Expense Tracker</h2>
+        <p class="page-subtitle">Automatically extracted financial data from your notes.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <button class="btn-secondary" onclick="openSetLimitModal()" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.5rem; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            Set Limit
+        </button>
+        <button class="btn-primary" onclick="openAddExpenseModal()">
+            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Add Expense
+        </button>
+    </div>
+</div>
+
+<div style="padding: 2rem;">
+    <!-- Expense Limit Warning Banner -->
+    <div id="expenseWarningAlert" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:14px; padding:1rem; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+        <span style="font-size:1.25rem;">⚠️</span>
+        <div style="flex:1;">
+            <div style="font-weight:700; font-family:'Outfit'; font-size:0.9rem; color:#fcd34d;">Monthly Limit Exceeded</div>
+            <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;" id="expenseWarningText">You have exceeded your monthly expense limit of ₹10,000.</div>
+        </div>
+        <button onclick="adjustMonthlyLimitPrompt()" style="background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); color:#fcd34d; padding:0.4rem 0.8rem; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='rgba(245,158,11,0.25)'" onmouseout="this.style.background='rgba(245,158,11,0.15)'">Adjust Limit</button>
+    </div>
+
+    <div class="total-card">
+        <div class="total-label">Total Expenses</div>
+        <div class="total-amount" id="totalAmount">₹0.00</div>
+    </div>
+
+    <div class="filters">
+        <div style="flex: 1; max-width: 250px;">
+            <input type="text" id="dateFilter" placeholder="Filter Date (YYYY-MM)" onkeyup="renderExpenses()">
+        </div>
+        <div style="flex: 1; max-width: 250px;">
+            <input type="text" id="categoryFilter" placeholder="Filter Category" onkeyup="renderExpenses()">
+        </div>
+    </div>
+
+    <div class="glass-panel" style="padding: 0; overflow: hidden;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 45%;">Category</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th style="text-align: right; width: 15%;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="expenseTableBody">
+                <tr>
+                    <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                        <div class="typing-indicator" style="margin-bottom: 1rem;"><span></span><span></span><span></span></div><br>
+                        Calculating expenses...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Expense Modal -->
+<div id="addExpenseModal" class="modal-overlay" onclick="if(event.target === this) closeAddExpenseModal()">
+    <div class="glass-panel modal-content" style="max-width: 500px; width: 90%; position: relative; padding: 2.5rem; border-radius: 24px; background: rgba(24, 24, 27, 0.95);">
+        <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; background: var(--brand-text-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Add New Expense</h3>
+        
+        <form id="addExpenseForm" onsubmit="handleAddExpense(event)">
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Category / Description</label>
+                <input type="text" id="expenseCategory" placeholder="e.g. Lunch with team, Groceries, AWS Server" required>
+            </div>
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Amount (INR / ₹)</label>
+                <input type="number" id="expenseAmount" step="any" placeholder="e.g. 250" required style="width: 100%; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border); background-color: var(--input-bg); color: var(--text-main); font-family: inherit; font-size: 0.95rem; box-sizing: border-box; transition: all 0.3s;">
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Date (Optional - Defaults to today)</label>
+                <input type="text" id="expenseDateInput" placeholder="YYYY-MM-DD">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn-secondary" onclick="closeAddExpenseModal()" style="padding: 0.75rem 1.5rem;">Cancel</button>
+                <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem;">Add Expense</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Set Monthly Limit Modal -->
+<div id="setLimitModal" class="modal-overlay" onclick="if(event.target === this) closeSetLimitModal()">
+    <div class="glass-panel modal-content" style="max-width: 450px; width: 90%; position: relative; padding: 2.5rem; border-radius: 24px; background: rgba(24, 24, 27, 0.95);">
+        <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; background: var(--brand-text-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Set Monthly Limit</h3>
+        
+        <form id="setLimitForm" onsubmit="handleSetLimit(event)">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Limit Amount (INR / ₹)</label>
+                <input type="number" id="monthlyLimitInput" step="any" placeholder="e.g. 10000" required style="width: 100%; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border); background-color: var(--input-bg); color: var(--text-main); font-family: inherit; font-size: 0.95rem; box-sizing: border-box; transition: all 0.3s;">
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-top: -0.75rem; margin-bottom: 2rem;">
+                Set a budget limit to track and receive alerts when your total expenses for the current month exceed this threshold.
+            </p>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn-secondary" onclick="closeSetLimitModal()" style="padding: 0.75rem 1.5rem;">Cancel</button>
+                <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem;">Save Limit</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allExpenses = [];
+
+    async function fetchExpenses() {
+        try {
+            const response = await fetch('/api/expenses/');
+            const data = await response.json();
+            if (response.ok) {
+                allExpenses = data.expenses;
+                renderExpenses();
+            } else {
+                document.getElementById('expenseTableBody').innerHTML = `<tr><td colspan="3" style="text-align: center; color: #ef4444; padding: 2rem;">Error loading expenses.</td></tr>`;
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('expenseTableBody').innerHTML = `<tr><td colspan="3" style="text-align: center; color: #ef4444; padding: 2rem;">Failed to connect to server.</td></tr>`;
+        }
+    }
+
+    function adjustMonthlyLimitPrompt() {
+        const currentLimit = localStorage.getItem('monthly_expense_limit') || 10000;
+        const newLimit = prompt("Enter your new monthly expense limit (₹):", currentLimit);
+        if (newLimit !== null && !isNaN(newLimit) && newLimit.trim() !== '') {
+            localStorage.setItem('monthly_expense_limit', Number(newLimit));
+            renderExpenses();
+        }
+    }
+
+    function renderExpenses() {
+        const dateFilter = document.getElementById('dateFilter').value.trim();
+        const categoryFilter = document.getElementById('categoryFilter').value.trim().toLowerCase();
+        const tbody = document.getElementById('expenseTableBody');
+        const totalAmountEl = document.getElementById('totalAmount');
+
+        // Check Limit for the Current Month
+        const currentMonthStr = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+        const monthlyTotal = allExpenses
+            .filter(e => e.date && e.date.startsWith(currentMonthStr))
+            .reduce((s, e) => s + e.amount, 0);
+        
+        const limit = Number(localStorage.getItem('monthly_expense_limit') || 10000);
+        const banner = document.getElementById('expenseWarningAlert');
+        if (monthlyTotal > limit) {
+            document.getElementById('expenseWarningText').textContent = `Breached! Your monthly expense of ₹${Math.round(monthlyTotal).toLocaleString('en-IN')} has exceeded your ₹${limit.toLocaleString('en-IN')} limit for ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}.`;
+            banner.style.display = 'flex';
+        } else {
+            banner.style.display = 'none';
+        }
+
+        let filtered = allExpenses.filter(e => {
+            let match = true;
+            if (dateFilter && (!e.date || !e.date.startsWith(dateFilter))) match = false;
+            if (categoryFilter && !e.category.toLowerCase().includes(categoryFilter)) match = false;
+            return match;
+        });
+
+        const total = filtered.reduce((sum, e) => sum + e.amount, 0);
+        totalAmountEl.textContent = `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 3rem;">No expenses found.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(e => `
+            <tr>
+                <td style="font-weight: 500;">${e.category}</td>
+                <td style="font-weight: 700; color: #6ee7b7;">₹${e.amount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td style="color: var(--text-muted); font-family: monospace;">${e.date || 'N/A'}</td>
+                <td style="text-align: right;">
+                    <button class="action-delete-btn" onclick="deleteExpense(event, '${e.category.replace(/'/g, "\\'")}', ${e.amount}, '${e.date || ''}')" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; padding:0.4rem 0.8rem; border-radius:8px; cursor:pointer; font-size:0.8rem; font-weight:600; transition:all 0.2s; display:inline-flex; align-items:center; gap:0.25rem;" onmouseover="this.style.background='rgba(239,68,68,0.25)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">
+                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function openAddExpenseModal() {
+        const modal = document.getElementById('addExpenseModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+        document.getElementById('expenseCategory').value = '';
+        document.getElementById('expenseAmount').value = '';
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('expenseDateInput').value = today;
+    }
+
+    function closeAddExpenseModal() {
+        const modal = document.getElementById('addExpenseModal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300);
+    }
+
+    function openSetLimitModal() {
+        const modal = document.getElementById('setLimitModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+        const currentLimit = localStorage.getItem('monthly_expense_limit') || 10000;
+        document.getElementById('monthlyLimitInput').value = currentLimit;
+    }
+
+    function closeSetLimitModal() {
+        const modal = document.getElementById('setLimitModal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300);
+    }
+
+    function handleSetLimit(event) {
+        event.preventDefault();
+        const limitValue = document.getElementById('monthlyLimitInput').value.trim();
+        if (limitValue !== '' && !isNaN(limitValue)) {
+            localStorage.setItem('monthly_expense_limit', Number(limitValue));
+            closeSetLimitModal();
+            renderExpenses();
+        }
+    }
+
+    async function handleAddExpense(event) {
+        event.preventDefault();
+        const category = document.getElementById('expenseCategory').value.trim();
+        const amount = document.getElementById('expenseAmount').value.trim();
+        const date = document.getElementById('expenseDateInput').value.trim();
+        
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = 'Adding...';
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/expenses/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    category: category,
+                    amount: amount,
+                    date: date
+                })
+            });
+
+            if (response.ok) {
+                closeAddExpenseModal();
+                await fetchExpenses();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to add expense.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error adding expense.');
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    async function deleteExpense(event, categoryText, amountVal, dateStr) {
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Deleting...';
+        btn.disabled = true;
+
+        if (!confirm(`Are you sure you want to delete the expense for "${categoryText}" (₹${amountVal})?`)) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/expenses/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    action: 'delete',
+                    category: categoryText,
+                    amount: amountVal,
+                    date: dateStr
+                })
+            });
+
+            if (response.ok) {
+                await fetchExpenses();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to delete expense.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error connecting to server.');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchExpenses);
+    window.addEventListener('notes-updated', fetchExpenses);
+</script>
+{% endblock %}

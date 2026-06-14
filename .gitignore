@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Streamlit cache
+.streamlit/
+*.db
+*.log
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+
+# Environments and Secrets
+venv/
+.env
+staticfiles/

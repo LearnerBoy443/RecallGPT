@@ -1,0 +1,628 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .dashboard {
+        padding: 2.5rem;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+    
+    /* Welcome Banner */
+    .welcome-banner {
+        background: radial-gradient(circle at right 20%, rgba(139,92,246,0.25) 0%, transparent 60%),
+                    radial-gradient(circle at left bottom, rgba(59,130,246,0.15) 0%, transparent 50%),
+                    var(--glass-panel-bg);
+        border: 1px solid rgba(139,92,246,0.15);
+        border-radius: 24px;
+        padding: 3rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 40px -10px rgba(139,92,246,0.1);
+    }
+    .welcome-banner::after {
+        content: '🧠';
+        position: absolute;
+        right: 3rem; top: 50%;
+        transform: translateY(-50%);
+        font-size: 6rem;
+        opacity: 0.08;
+        filter: drop-shadow(0 0 20px rgba(139,92,246,0.3));
+    }
+    .welcome-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        background: var(--brand-text-grad);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .welcome-subtitle {
+        color: var(--text-muted);
+        font-size: 1rem;
+        line-height: 1.6;
+        max-width: 600px;
+    }
+
+    /* Core Layout Grid */
+    .dashboard-layout {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        align-items: start;
+    }
+    @media (max-width: 1024px) {
+        .dashboard-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Stats Cards Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+    @media (max-width: 640px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .stat-card {
+        background: var(--glass-panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 1.75rem;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+        transform: perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1);
+        will-change: transform;
+    }
+    .stat-card:hover {
+        border-color: rgba(139,92,246,0.3);
+        box-shadow: 0 12px 30px -10px rgba(139,92,246,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+        background: linear-gradient(to bottom right, rgba(139,92,246,0.04), transparent);
+    }
+    .stat-icon {
+        width: 52px; height: 52px;
+        border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    .stat-value {
+        font-family: 'Outfit'; font-size: 1.8rem; font-weight: 800; line-height: 1.1;
+        margin-bottom: 0.25rem;
+    }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Section Headers */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+    }
+    .section-title {
+        font-family: 'Outfit';
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Progress Indicators */
+    .metrics-panel {
+        background: var(--glass-panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    .metric-row {
+        margin-bottom: 1.75rem;
+    }
+    .metric-row:last-child {
+        margin-bottom: 0;
+    }
+    .metric-label-container {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.875rem;
+        margin-bottom: 0.6rem;
+    }
+    .metric-name {
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+    .metric-val {
+        font-weight: 700;
+        font-family: 'Outfit';
+    }
+    .progress-bar-container {
+        height: 10px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 5px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+    .progress-bar {
+        height: 100%;
+        border-radius: 5px;
+        width: 0%;
+        transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .metric-desc {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.4rem;
+        display: block;
+    }
+
+    /* Recent Notes Feed */
+    .notes-feed-panel {
+        background: var(--glass-panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    .note-feed-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+    }
+    .feed-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.01);
+        border: 1px solid var(--border);
+        transition: all 0.2s ease;
+    }
+    .feed-item:hover {
+        background: rgba(255,255,255,0.03);
+        border-color: rgba(139,92,246,0.2);
+        transform: translateX(4px);
+    }
+    .feed-item-left {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+    .feed-item-icon {
+        font-size: 1.2rem;
+    }
+    .feed-item-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .feed-item-action {
+        font-size: 0.75rem;
+        color: var(--primary);
+        font-weight: 600;
+        text-decoration: none;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        background: rgba(139,92,246,0.08);
+        border: 1px solid rgba(139,92,246,0.15);
+        transition: all 0.2s;
+    }
+    .feed-item-action:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    /* Right Sidebar Items */
+    .sidebar-card {
+        background: var(--glass-panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 1.75rem;
+        margin-bottom: 1.5rem;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    .sidebar-card:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Action List */
+    .action-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .action-link {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 1rem 1.25rem;
+        border-radius: 14px;
+        color: var(--text-main);
+        text-decoration: none;
+        background: rgba(255,255,255,0.01);
+        border: 1px solid var(--border);
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .action-link:hover {
+        border-color: rgba(139,92,246,0.35);
+        background: linear-gradient(to right, rgba(139,92,246,0.05), transparent);
+        transform: translateX(4px);
+    }
+    .action-link-icon {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.15rem;
+    }
+    .action-link-icon.pink { background: rgba(236,72,153,0.12); color: var(--accent-2); }
+    .action-link-icon.purple { background: rgba(139,92,246,0.12); color: var(--primary); }
+    .action-link-icon.amber { background: rgba(245,158,11,0.12); color: #fbbf24; }
+    .action-link-icon.blue { background: rgba(59,130,246,0.12); color: var(--accent-1); }
+    .action-link-icon.green { background: rgba(16,185,129,0.12); color: #34d399; }
+    .action-link-title {
+        font-weight: 700;
+        font-family: 'Outfit';
+        font-size: 0.9rem;
+    }
+
+    /* Alerts Panel & Warning Items */
+    .alert-item {
+        display: flex;
+        align-items: start;
+        gap: 1rem;
+        padding: 1.25rem;
+        border-radius: 16px;
+        margin-bottom: 1rem;
+        border: 1px solid transparent;
+        animation: fadeInUp 0.4s ease both;
+    }
+    .alert-item:last-child {
+        margin-bottom: 0;
+    }
+    .alert-item.danger {
+        background: rgba(239,68,68,0.05);
+        border-color: rgba(239,68,68,0.25);
+    }
+    .alert-item.warning {
+        background: rgba(245,158,11,0.05);
+        border-color: rgba(245,158,11,0.25);
+    }
+    .alert-icon {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .alert-icon.danger { background: rgba(239,68,68,0.15); color: #f87171; }
+    .alert-icon.warning { background: rgba(245,158,11,0.15); color: #fbbf24; }
+
+    .alert-content { flex: 1; }
+    .alert-title { font-weight: 700; font-family: 'Outfit'; font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .alert-title.danger { color: #fca5a5; }
+    .alert-title.warning { color: #fcd34d; }
+    .alert-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Welcome Header -->
+    <div class="welcome-banner stagger-1">
+        <div class="welcome-title">Good day, {{ user.username|title }}! 👋</div>
+        <div class="welcome-subtitle">
+            Welcome to your premium personal AI workspace. Upload notes, track action items, organize expenses, or converse with the local RAG brain powered by NVIDIA Llama 3.1.
+        </div>
+    </div>
+
+    <!-- Active Alerts Panel (Hidden by default, displayed via script) -->
+    <div id="alertsPanel" style="display:none; flex-direction:column; margin-bottom: 1rem;">
+        <h3 class="section-title" style="margin-bottom: 1rem; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; color: var(--text-muted);">
+            ⚠️ System Alerts
+        </h3>
+        
+        <!-- Overdue Tasks -->
+        <div id="overdueAlert" class="alert-item danger" style="display:none;">
+            <div class="alert-icon danger">⚠️</div>
+            <div class="alert-content">
+                <div class="alert-title danger">Overdue Tasks Detected</div>
+                <div class="alert-desc" id="overdueAlertText">You have remaining tasks from past days.</div>
+                <a href="/tasks/" style="display:inline-block; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.25); color:#fca5a5; padding:0.35rem 0.75rem; border-radius:6px; text-decoration:none; font-size:0.75rem; font-weight:600; transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.25)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">Resolve Now</a>
+            </div>
+        </div>
+
+        <!-- Budget Breach -->
+        <div id="expenseAlert" class="alert-item warning" style="display:none;">
+            <div class="alert-icon warning">⚠️</div>
+            <div class="alert-content">
+                <div class="alert-title warning">Budget Alert</div>
+                <div class="alert-desc" id="expenseAlertText">You have breached your monthly budget limit.</div>
+                <button type="button" onclick="adjustMonthlyLimit()" style="background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.25); color:#fcd34d; padding:0.35rem 0.75rem; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='rgba(245,158,11,0.25)'" onmouseout="this.style.background='rgba(245,158,11,0.15)'">Adjust Limit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Section -->
+    <div class="dashboard-layout">
+        
+        <!-- Left Side: Statistics & Detailed Metrics -->
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            
+            <!-- Stats Grid -->
+            <div class="stats-grid stagger-2">
+                <div class="stat-card tilt-card">
+                    <div class="stat-icon" style="background: rgba(139,92,246,0.15);">📝</div>
+                    <div>
+                        <div class="stat-value" id="notesCount">-</div>
+                        <div class="stat-label">Notes Uploaded</div>
+                    </div>
+                </div>
+                <div class="stat-card tilt-card">
+                    <div class="stat-icon" style="background: rgba(59,130,246,0.15);">✅</div>
+                    <div>
+                        <div class="stat-value" id="tasksCount">-</div>
+                        <div class="stat-label">Tasks Extracted</div>
+                    </div>
+                </div>
+                <div class="stat-card tilt-card">
+                    <div class="stat-icon" style="background: rgba(236,72,153,0.15);">💬</div>
+                    <div>
+                        <div class="stat-value" id="chatsCount">-</div>
+                        <div class="stat-label">Total Chats</div>
+                    </div>
+                </div>
+                <div class="stat-card tilt-card">
+                    <div class="stat-icon" style="background: rgba(16,185,129,0.15);">💸</div>
+                    <div>
+                        <div class="stat-value" id="expTotal">-</div>
+                        <div class="stat-label">Spent This Month</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress & Metrics -->
+            <div class="metrics-panel stagger-3">
+                <h3 class="section-title" style="margin-bottom: 1.5rem;">📊 Productivity & Budget Progress</h3>
+                
+                <!-- Task Progress Bar -->
+                <div class="metric-row">
+                    <div class="metric-label-container">
+                        <span class="metric-name">Task Completion Rate</span>
+                        <span id="taskProgressPercent" class="metric-val" style="color: var(--primary);">0%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="taskProgressBar" class="progress-bar" style="background: linear-gradient(90deg, var(--primary), var(--accent-1));"></div>
+                    </div>
+                    <span class="metric-desc" id="taskProgressDetails">0 of 0 tasks completed</span>
+                </div>
+
+                <!-- Budget Progress Bar -->
+                <div class="metric-row">
+                    <div class="metric-label-container">
+                        <span class="metric-name">Monthly Budget Usage</span>
+                        <span id="budgetProgressPercent" class="metric-val" style="color: var(--accent-2);">0%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="budgetProgressBar" class="progress-bar" style="background: linear-gradient(90deg, var(--accent-2), #f43f5e);"></div>
+                    </div>
+                    <span class="metric-desc" id="budgetProgressDetails">Spent ₹0 of ₹10,000 limit</span>
+                </div>
+            </div>
+
+            <!-- Recent Notes feed -->
+            <div class="notes-feed-panel stagger-4">
+                <div class="section-header">
+                    <h3 class="section-title">📝 Recently Uploaded Notes</h3>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;" id="recentNotesCount">0 total</span>
+                </div>
+                <div id="recentNotesList" class="note-feed-list">
+                    <div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 1.5rem; background: rgba(255,255,255,0.01); border-radius: 12px; border: 1px dashed var(--border);">
+                        No markdown notes found. Click "Upload Notes" in the sidebar to get started.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Side: Sidebar Navigation / Quick Actions -->
+        <div class="stagger-4" style="display: flex; flex-direction: column;">
+            <div class="sidebar-card">
+                <h3 class="section-title" style="margin-bottom: 1.25rem;">⚡ Quick Access</h3>
+                <div class="action-list">
+                    <a href="/general-chat/" class="action-link">
+                        <div class="action-link-icon pink">💬</div>
+                        <div class="action-link-title">RecallGPT Chat</div>
+                    </a>
+                    <a href="/chat/" class="action-link">
+                        <div class="action-link-icon purple">📚</div>
+                        <div class="action-link-title">Chat with Notes</div>
+                    </a>
+                    <a href="/image-studio/" class="action-link">
+                        <div class="action-link-icon amber">🎨</div>
+                        <div class="action-link-title">Image Generation</div>
+                    </a>
+                    <a href="/tasks/" class="action-link">
+                        <div class="action-link-icon blue">✅</div>
+                        <div class="action-link-title font-bold">Tasks Board</div>
+                    </a>
+                    <a href="/expenses/" class="action-link">
+                        <div class="action-link-icon green">💸</div>
+                        <div class="action-link-title">Expenses Center</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function adjustMonthlyLimit() {
+        const currentLimit = localStorage.getItem('monthly_expense_limit') || 10000;
+        const newLimit = prompt("Enter your new monthly expense limit (₹):", currentLimit);
+        if (newLimit !== null && !isNaN(newLimit) && newLimit.trim() !== '') {
+            localStorage.setItem('monthly_expense_limit', Number(newLimit));
+            loadStats();
+        }
+    }
+
+    async function loadStats() {
+        try {
+            const [tasksResp, expResp, sessGenResp, sessNotesResp, notesResp] = await Promise.all([
+                fetch('/api/tasks/'),
+                fetch('/api/expenses/'),
+                fetch('/api/sessions/?type=general'),
+                fetch('/api/sessions/?type=notes'),
+                fetch('/api/notes/'),
+            ]);
+            
+            const tasks = await tasksResp.json();
+            const expenses = await expResp.json();
+            const sessGen = await sessGenResp.json();
+            const sessNotes = await sessNotesResp.json();
+            const notes = await notesResp.json();
+
+            // Notes Count and Feed
+            const notesList = notes.notes || [];
+            document.getElementById('notesCount').textContent = notesList.length;
+            document.getElementById('recentNotesCount').textContent = `${notesList.length} note${notesList.length !== 1 ? 's' : ''} total`;
+            
+            const feedContainer = document.getElementById('recentNotesList');
+            if (notesList.length > 0) {
+                // Slice last 4 notes and display them
+                const recentNotes = notesList.slice(-4).reverse();
+                feedContainer.innerHTML = recentNotes.map(filename => `
+                    <div class="feed-item">
+                        <div class="feed-item-left">
+                            <span class="feed-item-icon">📄</span>
+                            <span class="feed-item-title">${filename}</span>
+                        </div>
+                        <a href="/chat/" class="feed-item-action">Chat</a>
+                    </div>
+                `).join('');
+            } else {
+                feedContainer.innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 1.5rem; background: rgba(255,255,255,0.01); border-radius: 12px; border: 1px dashed var(--border);">
+                        No markdown notes found. Click "Upload Notes" in the sidebar to get started.
+                    </div>
+                `;
+            }
+
+            // Tasks Metrics
+            const allTasks = tasks.tasks || [];
+            document.getElementById('tasksCount').textContent = allTasks.length;
+            
+            const totalTasks = allTasks.length;
+            const completedTasks = allTasks.filter(t => t.status === 'done').length;
+            const taskProgressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            document.getElementById('taskProgressPercent').textContent = `${taskProgressPercent}%`;
+            document.getElementById('taskProgressBar').style.width = `${taskProgressPercent}%`;
+            document.getElementById('taskProgressDetails').textContent = `${completedTasks} of ${totalTasks} task${totalTasks !== 1 ? 's' : ''} completed`;
+
+            // Chats Count
+            document.getElementById('chatsCount').textContent = (sessGen.sessions?.length ?? 0) + (sessNotes.sessions?.length ?? 0);
+
+            // Expenses & Budget Metrics
+            const allExpenses = expenses.expenses || [];
+            const currentMonthStr = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+            const monthlyExpenses = allExpenses.filter(e => e.date && e.date.startsWith(currentMonthStr));
+            const monthlyTotal = monthlyExpenses.reduce((s, e) => s + e.amount, 0);
+            
+            const limit = Number(localStorage.getItem('monthly_expense_limit') || 10000);
+            document.getElementById('expTotal').textContent = `₹${Math.round(monthlyTotal).toLocaleString('en-IN')}`;
+
+            const budgetPercent = limit > 0 ? Math.min(Math.round((monthlyTotal / limit) * 100), 100) : 0;
+            const budgetPercentText = limit > 0 ? Math.round((monthlyTotal / limit) * 100) : 0;
+            document.getElementById('budgetProgressPercent').textContent = `${budgetPercentText}%`;
+            document.getElementById('budgetProgressBar').style.width = `${budgetPercent}%`;
+            document.getElementById('budgetProgressDetails').textContent = `Spent ₹${Math.round(monthlyTotal).toLocaleString('en-IN')} of ₹${limit.toLocaleString('en-IN')} limit`;
+
+            // Overdue Tasks Alert
+            const todayStr = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+            const overdueTasks = allTasks.filter(t => t.status === 'todo' && t.date && t.date < todayStr);
+            const overdueAlert = document.getElementById('overdueAlert');
+            const overdueText = document.getElementById('overdueAlertText');
+            
+            if (overdueTasks.length > 0) {
+                overdueText.textContent = `You have ${overdueTasks.length} task${overdueTasks.length > 1 ? 's' : ''} remaining from past days (e.g. "${overdueTasks[0].task}").`;
+                overdueAlert.style.display = 'flex';
+            } else {
+                overdueAlert.style.display = 'none';
+            }
+
+            // Budget Breach Alert
+            const expenseAlert = document.getElementById('expenseAlert');
+            const expenseText = document.getElementById('expenseAlertText');
+            
+            if (monthlyTotal > limit) {
+                expenseText.textContent = `Breached! You spent ₹${Math.round(monthlyTotal).toLocaleString('en-IN')} of your ₹${limit.toLocaleString('en-IN')} budget limit this month.`;
+                expenseAlert.style.display = 'flex';
+            } else {
+                expenseAlert.style.display = 'none';
+            }
+
+            // Alerts Grid Toggle
+            const alertsPanel = document.getElementById('alertsPanel');
+            if (overdueTasks.length > 0 || monthlyTotal > limit) {
+                alertsPanel.style.display = 'flex';
+            } else {
+                alertsPanel.style.display = 'none';
+            }
+
+        } catch (err) {
+            console.error('Error fetching statistics:', err);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { 
+        loadStats(); 
+
+        // 3D Tilt Effect logic
+        const tiltCards = document.querySelectorAll('.tilt-card');
+        tiltCards.forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((y - centerY) / centerY) * -4; // max tilt 4deg
+                const rotateY = ((x - centerX) / centerX) * 4;
+                
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                card.style.transition = 'none';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)`;
+                card.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s, border-color 0.3s';
+            });
+
+            card.addEventListener('mouseenter', () => {
+                card.style.transition = 'transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            });
+        });
+    });
+    window.addEventListener('notes-updated', loadStats);
+</script>
+{% endblock %}

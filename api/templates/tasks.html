@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .filters {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .status-badge {
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .status-todo {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #fca5a5;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .status-done {
+        background-color: rgba(16, 185, 129, 0.15);
+        color: #6ee7b7;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    th {
+        font-family: 'Outfit', sans-serif;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.1em;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--user-sec-bg);
+    }
+    th:first-child { border-top-left-radius: 12px; }
+    th:last-child { border-top-right-radius: 12px; }
+    td {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.2s;
+    }
+    tr:hover td {
+        background: var(--glass-panel-bg);
+    }
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Modal Overlay Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+    .modal-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .modal-content {
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+    }
+    .modal-overlay.active .modal-content {
+        transform: scale(1);
+    }
+
+    /* Complete Button Styles */
+    .action-complete-btn {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: #6ee7b7;
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    .action-complete-btn:hover {
+        background: rgba(16, 185, 129, 0.25) !important;
+        border-color: rgba(16, 185, 129, 0.6) !important;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+        transform: translateY(-1px);
+    }
+    .action-complete-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h2 class="page-title">Task Overview</h2>
+        <p class="page-subtitle">Automatically extracted to-dos from your markdown notes.</p>
+    </div>
+    <button class="btn-primary" onclick="openAddTaskModal()">
+        <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Add Task
+    </button>
+</div>
+
+<!-- Overdue Alert Banner -->
+<div id="overdueTasksAlert" style="display:none; margin: 1.5rem 2rem 0.5rem 2rem; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); border-radius:14px; padding:1rem; align-items:center; gap:1rem;">
+    <span style="font-size:1.25rem;">⚠️</span>
+    <div style="flex:1;">
+        <div style="font-weight:700; font-family:'Outfit'; font-size:0.9rem; color:#fca5a5;">Overdue Tasks Detected</div>
+        <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;" id="overdueAlertBannerText">You have 0 tasks from previous days that are still incomplete.</div>
+    </div>
+</div>
+
+<div style="padding: 2rem;">
+    <div class="filters">
+        <div style="flex: 1; max-width: 250px;">
+            <select id="statusFilter" onchange="renderTasks()">
+                <option value="all">All Statuses</option>
+                <option value="todo">To Do</option>
+                <option value="done">Done</option>
+            </select>
+        </div>
+        <div style="flex: 1; max-width: 250px;">
+            <input type="text" id="dateFilter" placeholder="Filter Date (YYYY-MM-DD)" onkeyup="renderTasks()">
+        </div>
+    </div>
+
+    <div class="glass-panel" style="padding: 0; overflow: hidden;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Task</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th style="text-align: right; width: 15%;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="taskTableBody">
+                <tr>
+                    <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                        <div class="typing-indicator" style="margin-bottom: 1rem;"><span></span><span></span><span></span></div><br>
+                        Extracting tasks from vector database...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+<div id="addTaskModal" class="modal-overlay" onclick="if(event.target === this) closeAddTaskModal()">
+    <div class="glass-panel modal-content" style="max-width: 500px; width: 90%; position: relative; padding: 2.5rem; border-radius: 24px; background: rgba(24, 24, 27, 0.95);">
+        <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; background: var(--brand-text-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Add New Task</h3>
+        
+        <form id="addTaskForm" onsubmit="handleAddTask(event)">
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Task Description</label>
+                <input type="text" id="taskDesc" placeholder="e.g. Prepare presentation slides" required>
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Date (Optional - Defaults to today)</label>
+                <input type="text" id="taskDateInput" placeholder="YYYY-MM-DD">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn-secondary" onclick="closeAddTaskModal()" style="padding: 0.75rem 1.5rem;">Cancel</button>
+                <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem;">Create Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allTasks = [];
+
+    async function fetchTasks() {
+        try {
+            const response = await fetch('/api/tasks/');
+            const data = await response.json();
+            if (response.ok) {
+                allTasks = data.tasks;
+                renderTasks();
+            } else {
+                document.getElementById('taskTableBody').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #ef4444; padding: 2rem;">Error loading tasks.</td></tr>`;
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('taskTableBody').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #ef4444; padding: 2rem;">Failed to connect to server.</td></tr>`;
+        }
+    }
+
+    function renderTasks() {
+        const statusFilter = document.getElementById('statusFilter').value;
+        const dateFilter = document.getElementById('dateFilter').value.trim();
+        const tbody = document.getElementById('taskTableBody');
+
+        // Check for Overdue Tasks
+        const todayStr = new Date().toISOString().split('T')[0];
+        const overdueTasks = allTasks.filter(t => t.status === 'todo' && t.date && t.date < todayStr);
+        const banner = document.getElementById('overdueTasksAlert');
+        if (overdueTasks.length > 0) {
+            document.getElementById('overdueAlertBannerText').textContent = `You have ${overdueTasks.length} task${overdueTasks.length > 1 ? 's' : ''} from previous days that ${overdueTasks.length > 1 ? 'are' : 'is'} still incomplete. Please complete them as soon as possible.`;
+            banner.style.display = 'flex';
+        } else {
+            banner.style.display = 'none';
+        }
+
+        let filtered = allTasks.filter(t => {
+            let match = true;
+            if (statusFilter !== 'all' && t.status !== statusFilter) match = false;
+            if (dateFilter && (!t.date || !t.date.startsWith(dateFilter))) match = false;
+            return match;
+        });
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 3rem;">No tasks found matching your criteria.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(t => {
+            let actionHtml = '';
+            if (t.status === 'todo') {
+                actionHtml = `
+                    <button class="action-complete-btn" onclick="completeTask(event, '${t.task.replace(/'/g, "\\'")}', '${t.date || ''}')">
+                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                        Done
+                    </button>
+                `;
+            } else {
+                actionHtml = `
+                    <span style="color: #10b981; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                        Completed
+                    </span>
+                `;
+            }
+
+            return `
+                <tr>
+                    <td style="font-weight: 500; ${t.status === 'done' ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${t.task}</td>
+                    <td><span class="status-badge status-${t.status}">${t.status}</span></td>
+                    <td style="color: var(--text-muted); font-family: monospace;">${t.date || 'N/A'}</td>
+                    <td style="text-align: right;">${actionHtml}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function openAddTaskModal() {
+        const modal = document.getElementById('addTaskModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+        document.getElementById('taskDesc').value = '';
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('taskDateInput').value = today;
+    }
+
+    function closeAddTaskModal() {
+        const modal = document.getElementById('addTaskModal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300);
+    }
+
+    async function handleAddTask(event) {
+        event.preventDefault();
+        const task = document.getElementById('taskDesc').value.trim();
+        const date = document.getElementById('taskDateInput').value.trim();
+        
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = 'Creating...';
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/tasks/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    action: 'add',
+                    task: task,
+                    date: date
+                })
+            });
+
+            if (response.ok) {
+                closeAddTaskModal();
+                await fetchTasks();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to add task.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error adding task.');
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    async function completeTask(event, taskText, date) {
+        const eventBtn = event ? event.currentTarget : null;
+        if (eventBtn) {
+            eventBtn.innerHTML = 'Ticking...';
+            eventBtn.disabled = true;
+        }
+
+        try {
+            const response = await fetch('/api/tasks/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    action: 'complete',
+                    task: taskText,
+                    date: date
+                })
+            });
+
+            if (response.ok) {
+                await fetchTasks();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to complete task.');
+                if (eventBtn) {
+                    eventBtn.innerHTML = `<svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg> Done`;
+                    eventBtn.disabled = false;
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error completing task.');
+            if (eventBtn) {
+                eventBtn.innerHTML = `<svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg> Done`;
+                eventBtn.disabled = false;
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchTasks);
+    window.addEventListener('notes-updated', fetchTasks);
+</script>
+{% endblock %}

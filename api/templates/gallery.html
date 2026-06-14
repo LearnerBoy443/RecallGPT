@@ -1,0 +1,746 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .gallery-container {
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .gallery-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+
+    .search-filter-bar {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+        width: 100%;
+        max-width: 800px;
+    }
+
+    .search-wrapper {
+        position: relative;
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .search-wrapper svg {
+        position: absolute;
+        left: 1.25rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        width: 18px;
+        height: 18px;
+        pointer-events: none;
+    }
+
+    .search-wrapper input {
+        padding-left: 3rem !important;
+    }
+
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .memory-card {
+        background: var(--glass-panel-bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .memory-card:hover {
+        transform: translateY(-6px);
+        border-color: var(--primary);
+        box-shadow: 0 12px 30px rgba(139, 92, 246, 0.15);
+    }
+
+    .card-img-wrapper {
+        position: relative;
+        width: 100%;
+        padding-top: 66.66%; /* 3:2 aspect ratio */
+        background: #000;
+        overflow: hidden;
+        cursor: zoom-in;
+    }
+
+    .card-img {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .memory-card:hover .card-img {
+        transform: scale(1.06);
+    }
+
+    .card-details {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        flex: 1;
+    }
+
+    .card-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .card-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .meta-item svg {
+        width: 13px;
+        height: 13px;
+    }
+
+    .card-desc {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: 2.8em;
+    }
+
+    .card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .tag-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        background: rgba(139, 92, 246, 0.12);
+        color: #c084fc;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .card-actions {
+        border-top: 1px solid var(--border);
+        padding: 0.75rem 1.25rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    .action-icon-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0.35rem;
+        border-radius: 8px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .action-icon-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-main);
+    }
+
+    .action-icon-btn.delete-btn:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .action-icon-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Modal Overlay Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(12px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+    
+    .modal-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .modal-content {
+        transform: scale(0.95);
+        transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+        transform: scale(1);
+    }
+
+    /* Lightbox Modal Specifics */
+    .lightbox-content {
+        max-width: 1000px;
+        width: 90%;
+        display: flex;
+        background: rgba(24, 24, 27, 0.95);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: var(--glass-shadow);
+    }
+
+    .lightbox-left {
+        flex: 1.3;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        max-height: 80vh;
+    }
+
+    .lightbox-left img {
+        max-width: 100%;
+        max-height: 80vh;
+        object-fit: contain;
+    }
+
+    .lightbox-right {
+        flex: 0.9;
+        padding: 2.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        border-left: 1px solid var(--border);
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    @media(max-width: 768px) {
+        .lightbox-content {
+            flex-direction: column;
+        }
+        .lightbox-right {
+            border-left: none;
+            border-top: 1px solid var(--border);
+        }
+    }
+
+    .lightbox-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        word-break: break-all;
+    }
+
+    .exif-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+
+    .exif-table td {
+        padding: 0.6rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .exif-table td.label {
+        color: var(--text-muted);
+        font-weight: 500;
+        width: 40%;
+    }
+
+    .exif-table td.value {
+        color: var(--text-main);
+        font-weight: 600;
+        text-align: right;
+    }
+
+    /* Empty state */
+    .empty-gallery {
+        text-align: center;
+        padding: 6rem 2rem;
+        color: var(--text-muted);
+    }
+
+    .empty-gallery-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h2 class="page-title">Gallery & Memories</h2>
+        <p class="page-subtitle">Your context-aware photo memories catalog with automated EXIF recall.</p>
+    </div>
+    <button class="btn-primary" onclick="openUploadModal()">
+        <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Upload Memory
+    </button>
+</div>
+
+<div class="gallery-container">
+    <!-- Search / Filters -->
+    <div class="search-filter-bar">
+        <div class="search-wrapper">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input type="text" id="gallerySearch" placeholder="Search by description, tags, location, or camera model..." oninput="debounceSearch()">
+        </div>
+    </div>
+
+    <!-- Memories Grid -->
+    <div class="gallery-grid" id="galleryGrid">
+        <!-- JS filled -->
+    </div>
+</div>
+
+<!-- Upload Memory Modal -->
+<div id="uploadModal" class="modal-overlay" onclick="if(event.target === this) closeUploadModal()">
+    <div class="glass-panel modal-content" style="max-width: 500px; width: 90%; position: relative; padding: 2.5rem; border-radius: 24px; background: rgba(24, 24, 27, 0.95);">
+        <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; background: var(--brand-text-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Upload Memory</h3>
+        
+        <form id="uploadForm" onsubmit="handleUpload(event)">
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Select Image (JPG, JPEG, PNG)</label>
+                <input type="file" id="uploadFile" accept=".jpg,.jpeg,.png" required style="padding:0.75rem 0.5rem;">
+            </div>
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Description (Optional)</label>
+                <input type="text" id="uploadDesc" placeholder="e.g. Ski trip with family in Swiss Alps">
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Tags (Optional - Comma separated)</label>
+                <input type="text" id="uploadTags" placeholder="e.g. family, vacation, snow">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn-secondary" onclick="closeUploadModal()" style="padding: 0.75rem 1.5rem;">Cancel</button>
+                <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem;" id="uploadSubmitBtn">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Metadata Modal -->
+<div id="editModal" class="modal-overlay" onclick="if(event.target === this) closeEditModal()">
+    <div class="glass-panel modal-content" style="max-width: 500px; width: 90%; position: relative; padding: 2.5rem; border-radius: 24px; background: rgba(24, 24, 27, 0.95);">
+        <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; background: var(--brand-text-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Edit Memory Metadata</h3>
+        
+        <form id="editForm" onsubmit="handleEdit(event)">
+            <input type="hidden" id="editId">
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Description</label>
+                <input type="text" id="editDesc" placeholder="Describe this memory...">
+            </div>
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Tags (Comma separated)</label>
+                <input type="text" id="editTags" placeholder="family, nature, trip...">
+            </div>
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Location (lat, lng)</label>
+                <input type="text" id="editLoc" placeholder="e.g. 48.8584, 2.2945">
+            </div>
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Date Taken (YYYY-MM-DD HH:MM:SS)</label>
+                <input type="text" id="editCaptured" placeholder="e.g. 2024-05-12 14:30:00">
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Camera Model</label>
+                <input type="text" id="editCamera" placeholder="e.g. iPhone 15 Pro">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn-secondary" onclick="closeEditModal()" style="padding: 0.75rem 1.5rem;">Cancel</button>
+                <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem;" id="editSubmitBtn">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lightbox Modal -->
+<div id="lightboxModal" class="modal-overlay" onclick="if(event.target === this) closeLightbox()">
+    <div class="lightbox-content modal-content">
+        <div class="lightbox-left">
+            <img id="lightboxImage" src="" alt="Memory View">
+        </div>
+        <div class="lightbox-right">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                <h3 class="lightbox-title" id="lightboxTitle">Image File</h3>
+                <button class="action-icon-btn" onclick="closeLightbox()" style="border-radius:50%; width:32px; height:32px;">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+                <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Description</div>
+                <div id="lightboxDesc" style="font-size:0.95rem; line-height:1.5;">No description available.</div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Tags</div>
+                <div id="lightboxTags" class="card-tags">
+                    <!-- Badges -->
+                </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:0.5rem;">
+                <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Metadata (EXIF)</div>
+                <table class="exif-table">
+                    <tr>
+                        <td class="label">Location</td>
+                        <td class="value" id="lightboxLoc">None</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Date Captured</td>
+                        <td class="value" id="lightboxCaptured">None</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Camera Model</td>
+                        <td class="value" id="lightboxCamera">Unknown</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Uploaded At</td>
+                        <td class="value" id="lightboxUploaded">None</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="display:flex; gap:1rem; margin-top:auto; padding-top:1.5rem; border-top:1px solid var(--border);">
+                <button class="btn-secondary" id="lightboxEditBtn" style="flex:1; padding:0.6rem;">Edit Metadata</button>
+                <button class="btn-secondary" id="lightboxDeleteBtn" style="color:#ef4444; border-color:rgba(239, 68, 68, 0.2); padding:0.6rem;" onmouseover="this.style.background='rgba(239, 68, 68, 0.08)'" onmouseout="this.style.background='none'">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allMemories = [];
+    let searchDebounceTimer = null;
+
+    async function loadMemories() {
+        const searchVal = document.getElementById('gallerySearch').value.trim();
+        const grid = document.getElementById('galleryGrid');
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 5rem 0;">
+                <div class="typing-indicator" style="margin-bottom: 1rem; justify-content:center;"><span></span><span></span><span></span></div>
+                Loading memories...
+            </div>`;
+
+        try {
+            const response = await fetch(`/api/gallery/?search=${encodeURIComponent(searchVal)}`);
+            const data = await response.json();
+            if (response.ok) {
+                allMemories = data.memories;
+                renderGallery();
+            } else {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 3rem;">Error loading memories: ${data.error || 'Server error'}</div>`;
+            }
+        } catch (err) {
+            console.error(err);
+            grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 3rem;">Failed to connect to server.</div>`;
+        }
+    }
+
+    function renderGallery() {
+        const grid = document.getElementById('galleryGrid');
+        if (allMemories.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-gallery" style="grid-column: 1/-1;">
+                    <div class="empty-gallery-icon">📸</div>
+                    <div class="empty-state-title">No Memories Found</div>
+                    <div>Upload some JPG or PNG images, or change your search filter.</div>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = allMemories.map(m => {
+            const tagsList = m.tags ? m.tags.split(',') : [];
+            const tagsHtml = tagsList.map(t => t.trim() ? `<span class="tag-badge">${t.trim()}</span>` : '').join('');
+            
+            return `
+                <div class="memory-card">
+                    <div class="card-img-wrapper" onclick="openLightbox(${m.id})">
+                        <img src="${m.url}" class="card-img" alt="${m.description || m.filename}">
+                    </div>
+                    <div class="card-details">
+                        <div class="card-title" title="${m.filename}">${m.filename}</div>
+                        <div class="card-meta-row">
+                            ${m.captured_at ? `
+                                <div class="meta-item">
+                                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    ${m.captured_at.split(' ')[0]}
+                                </div>` : ''}
+                            ${m.location ? `
+                                <div class="meta-item" title="${m.location}">
+                                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                    Pin
+                                </div>` : ''}
+                            ${m.camera_model ? `
+                                <div class="meta-item" title="${m.camera_model}">
+                                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                    ${m.camera_model.split(' ')[0]}
+                                </div>` : ''}
+                        </div>
+                        <div class="card-desc" title="${m.description || 'No description available'}">
+                            ${m.description || '<em style="opacity:0.5;">No description available</em>'}
+                        </div>
+                        <div class="card-tags">
+                            ${tagsHtml || '<span style="font-size:0.75rem;opacity:0.4;">No tags</span>'}
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-icon-btn" onclick="openEditModal(${m.id})" title="Edit Details">
+                            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                        <button class="action-icon-btn delete-btn" onclick="deleteMemory(${m.id})" title="Delete Memory">
+                            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    function debounceSearch() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(loadMemories, 300);
+    }
+
+    /* Modals Control */
+
+    function openUploadModal() {
+        const modal = document.getElementById('uploadModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+    }
+
+    function closeUploadModal() {
+        const modal = document.getElementById('uploadModal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300);
+        document.getElementById('uploadForm').reset();
+    }
+
+    async function handleUpload(event) {
+        event.preventDefault();
+        const fileInput = document.getElementById('uploadFile');
+        const descInput = document.getElementById('uploadDesc');
+        const tagsInput = document.getElementById('uploadTags');
+        const submitBtn = document.getElementById('uploadSubmitBtn');
+
+        if (!fileInput.files.length) return;
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('description', descInput.value.trim());
+        formData.append('tags', tagsInput.value.trim());
+
+        const origText = submitBtn.innerText;
+        submitBtn.innerText = 'Uploading...';
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/gallery/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                body: formData
+            });
+
+            if (response.ok) {
+                closeUploadModal();
+                await loadMemories();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to upload image.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error uploading memory.');
+        } finally {
+            submitBtn.innerText = origText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    function openEditModal(memoryId) {
+        const m = allMemories.find(x => x.id === memoryId);
+        if (!m) return;
+
+        document.getElementById('editId').value = m.id;
+        document.getElementById('editDesc').value = m.description || '';
+        document.getElementById('editTags').value = m.tags || '';
+        document.getElementById('editLoc').value = m.location || '';
+        document.getElementById('editCaptured').value = m.captured_at || '';
+        document.getElementById('editCamera').value = m.camera_model || '';
+
+        const modal = document.getElementById('editModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+    }
+
+    function closeEditModal() {
+        const modal = document.getElementById('editModal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300);
+        document.getElementById('editForm').reset();
+    }
+
+    async function handleEdit(event) {
+        event.preventDefault();
+        const id = document.getElementById('editId').value;
+        const description = document.getElementById('editDesc').value.trim();
+        const tags = document.getElementById('editTags').value.trim();
+        const location = document.getElementById('editLoc').value.trim();
+        const captured_at = document.getElementById('editCaptured').value.trim();
+        const camera_model = document.getElementById('editCamera').value.trim();
+        const submitBtn = document.getElementById('editSubmitBtn');
+
+        const origText = submitBtn.innerText;
+        submitBtn.innerText = 'Saving...';
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/gallery/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ id, description, tags, location, captured_at, camera_model })
+            });
+
+            if (response.ok) {
+                closeEditModal();
+                // If Lightbox is open, we can close it or update it
+                closeLightbox();
+                await loadMemories();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to save changes.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error updating memory details.');
+        } finally {
+            submitBtn.innerText = origText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    async function deleteMemory(memoryId) {
+        if (!confirm('Are you sure you want to delete this memory? This cannot be undone.')) return;
+
+        try {
+            const response = await fetch(`/api/gallery/?id=${memoryId}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+            });
+
+            if (response.ok) {
+                closeLightbox();
+                await loadMemories();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to delete memory.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error deleting memory.');
+        }
+    }
+
+    /* Lightbox Features */
+
+    function openLightbox(memoryId) {
+        const m = allMemories.find(x => x.id === memoryId);
+        if (!m) return;
+
+        document.getElementById('lightboxImage').src = m.url;
+        document.getElementById('lightboxTitle').innerText = m.filename;
+        document.getElementById('lightboxDesc').innerText = m.description || 'No description available.';
+        
+        // Tags
+        const tagsDiv = document.getElementById('lightboxTags');
+        const tagsList = m.tags ? m.tags.split(',') : [];
+        tagsDiv.innerHTML = tagsList.map(t => t.trim() ? `<span class="tag-badge">${t.trim()}</span>` : '').join('') || '<span style="font-size:0.85rem;opacity:0.4;">No tags</span>';
+
+        // EXIF info
+        document.getElementById('lightboxLoc').innerText = m.location || 'None';
+        document.getElementById('lightboxCaptured').innerText = m.captured_at || 'None';
+        document.getElementById('lightboxCamera').innerText = m.camera_model || 'Unknown';
+        document.getElementById('lightboxUploaded').innerText = m.uploaded_at || 'None';
+
+        // Bind Action buttons
+        document.getElementById('lightboxEditBtn').onclick = () => openEditModal(m.id);
+        document.getElementById('lightboxDeleteBtn').onclick = () => deleteMemory(m.id);
+
+        const modal = document.getElementById('lightboxModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+    }
+
+    function closeLightbox() {
+        const modal = document.getElementById('lightboxModal');
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.getElementById('lightboxImage').src = '';
+        }, 300);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMemories();
+        window.addEventListener('notes-updated', loadMemories);
+    });
+</script>
+{% endblock %}
