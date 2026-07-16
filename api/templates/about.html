@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .avatar-wrapper:hover .avatar-overlay {
+        opacity: 1 !important;
+    }
+    .avatar-wrapper:hover #avatar-img {
+        filter: brightness(0.6);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">About You</h1>
+    <div class="page-subtitle">Manage your RecallGPT profile details.</div>
+</div>
+
+<div style="padding: 2rem;">
+    <div class="glass-panel" style="max-width: 600px; margin: 0 auto;">
+        
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 2rem;">
+            <form id="avatar-form" method="post" enctype="multipart/form-data" action="{% url 'about' %}">
+                {% csrf_token %}
+                <input type="file" id="profile_pic_input" name="profile_picture" accept="image/*" style="display: none;" onchange="document.getElementById('avatar-form').submit();">
+                <label for="profile_pic_input" style="cursor: pointer; display: inline-block; margin-bottom: 1rem; border-radius: 50%;">
+                    <div class="avatar-wrapper" style="position: relative; border-radius: 50%; width: 120px; height: 120px; overflow: hidden; border: 3px solid var(--primary); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+                        {% if user.profile.profile_picture %}
+                            <img src="{{ user.profile.profile_picture.url }}" id="avatar-img" alt="Profile Picture" style="width: 100%; height: 100%; object-fit: cover; transition: all 0.3s;">
+                        {% else %}
+                            <div id="avatar-img" style="width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary), var(--accent-1)); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; font-weight: 700; transition: all 0.3s;">
+                                {{ user.username|make_list|first|upper }}
+                            </div>
+                        {% endif %}
+                        <div class="avatar-overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s;">
+                            <span style="color: white; font-size: 1.5rem;">📷</span>
+                        </div>
+                    </div>
+                </label>
+            </form>
+            <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 0.2rem; background: var(--brand-text-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ user.username }}</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Pro Plan Member</p>
+        </div>
+
+        <form method="post" action="{% url 'about' %}" id="profile-form" style="background: var(--btn-sec-bg); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); position: relative;">
+            {% csrf_token %}
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0; font-family: 'Outfit'; font-size: 1.2rem; color: var(--text-main);">Contact Details</h3>
+                <button type="button" id="edit-btn" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem;" onclick="toggleEdit(true)">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 14px; height: 14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    Edit
+                </button>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; display: block; margin-bottom: 0.5rem;">Gmail / Email</label>
+                    <input type="email" id="email-input" name="email" value="{{ user.email }}" placeholder="Enter your email" readonly style="width: 100%; padding: 0.875rem 1.25rem; border-radius: 12px; border: 1px solid transparent; background-color: transparent; color: var(--text-main); font-family: inherit; font-size: 1.05rem; font-weight: 500; transition: all 0.3s; pointer-events: none;">
+                </div>
+                
+                <div style="border-top: 1px solid var(--border); margin: 0.5rem 0;" class="divider-line"></div>
+
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; display: block; margin-bottom: 0.5rem;">Phone Number</label>
+                    <input type="text" id="phone-input" name="phone_number" value="{{ user.profile.phone_number }}" placeholder="Enter your phone number" readonly style="width: 100%; padding: 0.875rem 1.25rem; border-radius: 12px; border: 1px solid transparent; background-color: transparent; color: var(--text-main); font-family: inherit; font-size: 1.05rem; font-weight: 500; transition: all 0.3s; pointer-events: none;">
+                </div>
+            </div>
+
+            <div id="save-actions" style="margin-top: 2rem; display: none; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn-secondary" onclick="toggleEdit(false)">Cancel</button>
+                <button type="submit" class="btn-primary">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 18px; height: 18px; margin-right: 0.2rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Save Changes
+                </button>
+            </div>
+        </form>
+
+        <script>
+            function toggleEdit(isEditing) {
+                const emailInput = document.getElementById('email-input');
+                const phoneInput = document.getElementById('phone-input');
+                const editBtn = document.getElementById('edit-btn');
+                const saveActions = document.getElementById('save-actions');
+                const divider = document.querySelector('.divider-line');
+
+                if (isEditing) {
+                    // Switch to edit mode
+                    [emailInput, phoneInput].forEach(el => {
+                        el.readOnly = false;
+                        el.style.pointerEvents = 'auto';
+                        el.style.backgroundColor = 'var(--input-bg)';
+                        el.style.borderColor = 'var(--border)';
+                        el.style.fontSize = '0.95rem';
+                        el.style.fontWeight = '400';
+                    });
+                    editBtn.style.display = 'none';
+                    saveActions.style.display = 'flex';
+                    if(divider) divider.style.display = 'none';
+                    emailInput.focus();
+                } else {
+                    // Switch to view mode (cancel)
+                    // Reset values to original
+                    emailInput.value = "{{ user.email }}";
+                    phoneInput.value = "{{ user.profile.phone_number }}";
+                    
+                    [emailInput, phoneInput].forEach(el => {
+                        el.readOnly = true;
+                        el.style.pointerEvents = 'none';
+                        el.style.backgroundColor = 'transparent';
+                        el.style.borderColor = 'transparent';
+                        el.style.fontSize = '1.05rem';
+                        el.style.fontWeight = '500';
+                    });
+                    editBtn.style.display = 'flex';
+                    saveActions.style.display = 'none';
+                    if(divider) divider.style.display = 'block';
+                }
+            }
+        </script>
+
+
+        
+    </div>
+</div>
+{% endblock %}
